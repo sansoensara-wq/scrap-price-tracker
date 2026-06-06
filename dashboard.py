@@ -20,7 +20,10 @@ def hash_password(password: str) -> str:
 
 def check_login():
     # รหัสผ่านจาก secrets หรือ environment variable
-    correct_password = os.getenv("DASHBOARD_PASSWORD", "scrap2024")
+    try:
+        correct_password = st.secrets["DASHBOARD_PASSWORD"]
+    except Exception:
+        correct_password = os.getenv("DASHBOARD_PASSWORD", "scrap2024")
 
     if "logged_in" not in st.session_state:
         st.session_state.logged_in = False
