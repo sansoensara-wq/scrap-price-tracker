@@ -13,20 +13,27 @@ TSB เหล็กกล้า  27/05/69
 """
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
+
+from grade_mapping import normalize_grade
 
 
 @dataclass
 class PriceEntry:
     company: str
     price_date: str          # วันที่ในข้อความ เช่น "27/05/69"
-    category: str            # เช่น "ปั้ม", "หนา", "สปอต 80-100"
+    category: str            # ชื่อเกรดดิบตามที่โรงเรียก เช่น "ปั้ม", "P&S"
     price: float
     raw_text: str
     sender: str
     source_id: str
     source_type: str
+    grade: str = field(default="")   # เกรดมาตรฐาน (normalize แล้ว) เช่น "ปั๊ม"
+
+    def __post_init__(self):
+        if not self.grade:
+            self.grade = normalize_grade(self.company, self.category)
 
 
 # Regex จับ: ตัวเลขท้ายบรรทัด (ราคา)
