@@ -3,17 +3,12 @@
 """
 
 import os
-from linebot import LineBotApi
-from linebot.models import TextSendMessage
 from database import get_alerts
 
 _fired: set[int] = set()
 
 
-def check_and_notify(entries: list, line_bot_api: LineBotApi, source_id: str, source_type: str):
-    if not line_bot_api.access_token:
-        return
-
+def check_and_notify(entries: list, line_bot_api, source_id: str, source_type: str):
     alerts = get_alerts()
     messages = []
 
@@ -21,42 +16,47 @@ def check_and_notify(entries: list, line_bot_api: LineBotApi, source_id: str, so
         for alert in alerts:
             if not alert["active"]:
                 continue
-            # ถ้า alert ระบุ category ให้จับคู่กัน
-            if alert["category"] and alert["category"] != entry.category:
+            if alert["category"] and alert["category"] != entry.grade:
                 continue
 
             triggered = (
                 (alert["direction"] == "above" and entry.price >= alert["threshold"])
                 or (alert["direction"] == "below" and entry.price <= alert["threshold"])
             )
-            key = (alert["id"], entry.category)
+            key = (alert["id"], entry.grade)
             if triggered and key not in _fired:
                 _fired.add(key)
                 direction_th = "สูงกว่า ↑" if alert["direction"] == "above" else "ต่ำกว่า ↓"
                 messages.append(
                     f"🔔 แจ้งเตือน [{alert['label']}]\n"
-                    f"หมวด: {entry.category}\n"
+                    f"หมวด: {entry.grade}\n"
                     f"ราคา {entry.price:,.2f} {direction_th} {alert['threshold']:,.2f}"
                 )
             elif not triggered:
-                _fired.discard((alert["id"], entry.category))
+                _fired.discard((alert["id"], entry.grade))
 
     if not messages:
         return
 
+    if line_bot_api is None:
+        return
+
     try:
+        from linebot.v3.messaging import TextMessage, PushMessageRequest
         line_bot_api.push_message(
-            source_id, [TextSendMessage(text=m) for m in messages]
+            PushMessageRequest(
+                to=source_id,
+                messages=[TextMessage(text=m) for m in messages]
+            )
         )
     except Exception as e:
-        print(f"[notifier] error: {e}")
+        print(f"[notifier] error sending alert: {e}")
 
 
 def send_line_notify(message: str):
     """ส่งผ่าน LINE Notify token"""
     token = os.getenv("LINE_NOTIFY_TOKEN", "")
     if not token:
-        print("[notifier] LINE_NOTIFY_TOKEN not set")
         return
     import urllib.request, urllib.parse
     data = urllib.parse.urlencode({"message": f"\n{message}"}).encode()
