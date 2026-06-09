@@ -3,3 +3,5 @@ prices.db
 __pycache__/
 *.pyc
 .streamlit/secrets.toml
+scrap-ocr-key.json
+*-key.json

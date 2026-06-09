@@ -6,12 +6,13 @@ import os
 from flask import Flask, request, abort
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
-from linebot.models import MessageEvent, TextMessage
+from linebot.models import MessageEvent, TextMessage, ImageMessage
 from dotenv import load_dotenv
 
 from parser import parse_price_message
 from database import save_prices
 from notifier import check_and_notify
+from ocr import extract_text_from_image_bytes
 
 load_dotenv()
 
@@ -59,6 +60,50 @@ def handle_message(event):
     save_prices(entries)
     check_and_notify(entries, line_bot_api, source_id, source_type)
     print(f"[webhook] saved {len(entries)} entries from {sender}")
+
+
+@handler.add(MessageEvent, message=ImageMessage)
+def handle_image(event):
+    """รับรูปภาพจาก LINE แล้วใช้ OCR อ่านราคา"""
+    sender = getattr(event.source, "user_id", "unknown")
+    source_type = event.source.type
+    source_id = (
+        getattr(event.source, "group_id", None)
+        or getattr(event.source, "room_id", None)
+        or sender
+    )
+
+    # ดาวน์โหลดรูปจาก LINE
+    try:
+        message_content = line_bot_api.get_message_content(event.message.id)
+        image_bytes = b"".join(chunk for chunk in message_content.iter_content())
+    except Exception as e:
+        print(f"[webhook] ดาวน์โหลดรูปไม่ได้: {e}")
+        return
+
+    # OCR อ่านข้อความจากรูป
+    text = extract_text_from_image_bytes(image_bytes)
+    if not text:
+        print("[webhook] OCR อ่านข้อความจากรูปไม่ได้")
+        return
+
+    print(f"[webhook] OCR text:\n{text}")
+
+    # parse ราคาจากข้อความที่ OCR อ่านได้
+    entries = parse_price_message(
+        text,
+        sender=sender,
+        source_id=source_id,
+        source_type=source_type,
+    )
+
+    if not entries:
+        print("[webhook] OCR ไม่พบข้อมูลราคาในรูป")
+        return
+
+    save_prices(entries)
+    check_and_notify(entries, line_bot_api, source_id, source_type)
+    print(f"[webhook] saved {len(entries)} entries from image (sender={sender})")
 
 
 if __name__ == "__main__":
