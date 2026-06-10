@@ -10,35 +10,34 @@ from pathlib import Path
 
 def _setup_credentials():
     """
-    ตั้งค่า Google credentials จาก:
-    1. Streamlit secrets (GOOGLE_CREDENTIALS_JSON) — ใช้บน Streamlit Cloud
-    2. ไฟล์ JSON ในโฟลเดอร์โปรเจค — ใช้บนเครื่อง local
+    ตั้งค่า Google credentials จากไฟล์ key หรือ Streamlit secrets
     """
-    # ลอง Streamlit secrets ก่อน
+    # 1. ใช้ไฟล์ key ในโฟลเดอร์โปรเจคก่อน (เร็วกว่าและทำงานได้ทั้ง webhook และ dashboard)
+    key_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "scrap-ocr-key.json")
+    if not os.path.isabs(key_path):
+        key_path = str(Path(__file__).parent / key_path)
+    if os.path.exists(key_path):
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = key_path
+        print(f"[OCR] ใช้ credentials จากไฟล์: {key_path}")
+        return True
+
+    # 2. fallback: Streamlit secrets (สำหรับ Streamlit Cloud เท่านั้น)
     try:
         import streamlit as st
         creds_json = st.secrets.get("GOOGLE_CREDENTIALS_JSON", None)
         if creds_json:
-            # เขียนลง temp file เพราะ google SDK ต้องการ path
             tmp = tempfile.NamedTemporaryFile(
                 mode="w", suffix=".json", delete=False, encoding="utf-8"
             )
             tmp.write(creds_json)
             tmp.close()
             os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = tmp.name
+            print(f"[OCR] ใช้ credentials จาก Streamlit secrets")
             return True
     except Exception:
         pass
 
-    # fallback: ใช้ไฟล์ key ในโฟลเดอร์โปรเจค
-    key_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "scrap-ocr-key.json")
-    if not os.path.isabs(key_path):
-        key_path = str(Path(__file__).parent / key_path)
-    if os.path.exists(key_path):
-        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = key_path
-        return True
-
-    print("[OCR] ไม่พบ Google credentials — ตรวจสอบ scrap-ocr-key.json หรือ Streamlit secrets")
+    print("[OCR] ❌ ไม่พบ Google credentials — ตรวจสอบ scrap-ocr-key.json")
     return False
 
 
