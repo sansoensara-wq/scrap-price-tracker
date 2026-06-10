@@ -16,7 +16,7 @@ import re
 from dataclasses import dataclass, field
 from datetime import datetime
 
-from grade_mapping import normalize_grade
+from grade_mapping import normalize_grade, is_known_grade_name
 
 
 @dataclass
@@ -142,6 +142,9 @@ def parse_price_message(
                 continue
 
         i += 1
+
+    # ── เก็บเฉพาะเกรดที่เคยสอน mapping ไว้แล้วเท่านั้น ──────────────
+    entries = [e for e in entries if is_known_grade_name(e.company, e.category)]
 
     return entries
 
