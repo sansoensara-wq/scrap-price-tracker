@@ -21,6 +21,7 @@ GRADE_SPOT_80_100 = "สปอต 80-100"
 GRADE_SPOT_50_70 = "สปอต 50-70"
 GRADE_AB = "AB"
 GRADE_B2 = "B2"
+GRADE_TURNING = "ขี้กลึง"
 
 ALL_STANDARD_GRADES = [
     GRADE_PUMP,
@@ -31,6 +32,7 @@ ALL_STANDARD_GRADES = [
     GRADE_SPOT_50_70,
     GRADE_AB,
     GRADE_B2,
+    GRADE_TURNING,
 ]
 
 # ══════════════════════════════════════════════════════════════
@@ -63,6 +65,7 @@ GRADE_MAP: dict[tuple[str, str], str] = {
     ("STS", "ปั๊ม"): GRADE_PUMP,
     ("CSS", "ปั้ม"): GRADE_PUMP,
     ("CSS", "ปั๊ม"): GRADE_PUMP,
+    ("CSS", "เหล็กปั้ม/ปั๊มอัด"): GRADE_PUMP,
     ("NTS", "B1"): GRADE_PUMP,
     ("GJ", "Busheling"): GRADE_PUMP,
     ("GS", "Busheling"): GRADE_PUMP,
@@ -80,6 +83,7 @@ GRADE_MAP: dict[tuple[str, str], str] = {
     ("CHOW", "ตัดไฟ A"): GRADE_CUT_A,
     ("STS", "ตัดไฟ A"): GRADE_CUT_A,
     ("CSS", "ตัดไฟ A"): GRADE_CUT_A,
+    ("CSS", "เหล็กตัดไฟ/หนาพิเศษ A"): GRADE_CUT_A,
     ("AB STEEL", "ตัดไฟ A"): GRADE_CUT_A,
     ("YLL", "ตัดไฟ A"): GRADE_CUT_A,
 
@@ -89,6 +93,7 @@ GRADE_MAP: dict[tuple[str, str], str] = {
     ("KPP", "ตัดไฟ B"): GRADE_CUT_B,
     ("STS", "ตัดไฟ B"): GRADE_CUT_B,
     ("CSS", "ตัดไฟ B"): GRADE_CUT_B,
+    ("CSS", "เหล็กตัดไฟ/หนาพิเศษ B"): GRADE_CUT_B,
     ("SYS", "PM"): GRADE_CUT_B,
     ("TYS", "P&S B"): GRADE_CUT_B,
     ("AB STEEL", "ตัดไฟ B"): GRADE_CUT_B,
@@ -143,6 +148,7 @@ GRADE_MAP: dict[tuple[str, str], str] = {
     ("SYS", "D"): GRADE_AB,
     ("TYS", "LMS บาง"): GRADE_AB,
     ("MILLCON", "Local 3"): GRADE_AB,
+    ("CSS", "เหล็กบาง"): GRADE_AB,
 
     # ── 8) B2 ────────────────────────────────────────────────
     ("LN", "เหล็กบางอัด"): GRADE_B2,
@@ -157,6 +163,9 @@ GRADE_MAP: dict[tuple[str, str], str] = {
     ("SYS", "Bundle SY"): GRADE_B2,
     ("TYS", "LMS Bundle"): GRADE_B2,
     ("MILLCON", "Bundle 2"): GRADE_B2,
+
+    # ── 9) ขี้กลึง ─────────────────────────────────────────────
+    ("CSS", "ขี้กลึงฟู"): GRADE_TURNING,
 }
 
 

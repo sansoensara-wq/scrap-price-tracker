@@ -78,12 +78,25 @@ def parse_price_message(
     if not price_date:
         return _parse_quick(text, sender, source_id, source_type)
 
+    # ถ้าบรรทัดวันที่ไม่มีชื่อบริษัทนำหน้า (เช่น "ราคาเริ่มวันที่ 10/6/2026")
+    # ให้ใช้บรรทัดก่อนหน้าเป็นชื่อบริษัท (ถ้ามีและไม่มีตัวเลข)
+    if "วันที่" in company:
+        company = ""
+    if not company and header_idx > 0:
+        prev_line = lines[header_idx - 1].strip()
+        if prev_line and not re.search(r"\d", prev_line):
+            company = prev_line
+
     # ── วนอ่านบรรทัดที่เหลือหาหมวดราคา ────────────────────────────────
     entries: list[PriceEntry] = []
-    for line in lines[header_idx + 1 :]:
-        line = line.strip()
-        if not line:
-            continue
+    skip_words = {"เกรด", "ราคา"}
+    remaining = [ln.strip() for ln in lines[header_idx + 1:] if ln.strip()]
+
+    i = 0
+    while i < len(remaining):
+        line = remaining[i]
+
+        # รูปแบบเดิม: "ชื่อเกรด    ราคา" บรรทัดเดียว
         match = PRICE_LINE_RE.match(line)
         if match:
             category = match.group(1).strip()
@@ -100,6 +113,35 @@ def parse_price_message(
                     source_type=source_type,
                 )
             )
+            i += 1
+            continue
+
+        # รูปแบบใหม่: บรรทัดชื่อเกรด แล้วบรรทัดถัดไปเป็นราคา
+        if line in skip_words:
+            i += 1
+            continue
+
+        is_number = re.fullmatch(r"[\d]+(?:\.[\d]{1,2})?", line)
+        if not is_number and i + 1 < len(remaining):
+            next_line = remaining[i + 1]
+            num_match = re.fullmatch(r"([\d]+(?:\.[\d]{1,2})?)", next_line)
+            if num_match:
+                entries.append(
+                    PriceEntry(
+                        company=company,
+                        price_date=price_date,
+                        category=line,
+                        price=float(num_match.group(1)),
+                        raw_text=text,
+                        sender=sender,
+                        source_id=source_id,
+                        source_type=source_type,
+                    )
+                )
+                i += 2
+                continue
+
+        i += 1
 
     return entries
 
