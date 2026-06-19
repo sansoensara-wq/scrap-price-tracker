@@ -26,19 +26,12 @@ def extract_text_from_image_bytes(image_bytes: bytes) -> str:
         image = Image.open(io.BytesIO(image_bytes))
         image = _preprocess(image)
 
-        best_text = ""
-        # ลอง PSM หลายแบบ เลือกอันที่ได้ตัวเลขมากที่สุด (น่าจะมีราคา)
-        for psm in (6, 4, 3):
-            text = pytesseract.image_to_string(
-                image, lang="tha+eng", config=f"--psm {psm}"
-            )
-            import re
-            num_count = len(re.findall(r"\d+\.\d+", text))
-            if num_count > len(re.findall(r"\d+\.\d+", best_text)):
-                best_text = text
-
-        print(f"[OCR] Tesseract อ่านได้: {len(best_text)} ตัวอักษร")
-        return best_text.strip()
+        # PSM 6 = uniform block, เหมาะกับตารางราคา
+        text = pytesseract.image_to_string(
+            image, lang="tha+eng", config="--psm 6"
+        )
+        print(f"[OCR] Tesseract อ่านได้: {len(text)} ตัวอักษร")
+        return text.strip()
 
     except ImportError as e:
         print(f"[OCR] ขาด library: {e}")
