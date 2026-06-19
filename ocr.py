@@ -26,9 +26,9 @@ def extract_text_from_image_bytes(image_bytes: bytes) -> str:
         image = Image.open(io.BytesIO(image_bytes))
         image = _preprocess(image)
 
-        # PSM 6 = uniform block, เหมาะกับตารางราคา
+        # PSM 11 = sparse text, ค้นหาข้อความทุกที่ รวมถึงในตาราง
         text = pytesseract.image_to_string(
-            image, lang="tha+eng", config="--psm 6"
+            image, lang="tha+eng", config="--psm 11"
         )
         print(f"[OCR] Tesseract อ่านได้: {len(text)} ตัวอักษร")
         return text.strip()
