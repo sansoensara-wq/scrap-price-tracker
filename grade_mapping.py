@@ -170,7 +170,9 @@ GRADE_MAP: dict[tuple[str, str], str] = {
 
 
 def _norm_text(s: str) -> str:
-    """ตัด space ซ้ำ/หัวท้าย และแปลงเป็นตัวพิมพ์เล็กสำหรับเทียบ"""
+    """ตัด space ซ้ำ/หัวท้าย ลบวรรณยุกต์ไทย เพื่อให้ ปั้ม/ปั๊ม/ปั่ม ถือว่าเหมือนกัน"""
+    TONE_MARKS = "่้๊๋"
+    s = "".join(c for c in s if c not in TONE_MARKS)
     return " ".join(s.strip().split())
 
 
