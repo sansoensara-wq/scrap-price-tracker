@@ -144,6 +144,9 @@ def parse_price_message(
         i += 1
 
     # ── เก็บเฉพาะเกรดที่เคยสอน mapping ไว้แล้วเท่านั้น ──────────────
+    for e in entries:
+        known = is_known_grade_name(e.company, e.category)
+        print(f"[PARSER] company={repr(e.company)} category={repr(e.category)} known={known}")
     entries = [e for e in entries if is_known_grade_name(e.company, e.category)]
 
     return entries
