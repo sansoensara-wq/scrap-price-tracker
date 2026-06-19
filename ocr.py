@@ -1,44 +1,8 @@
 """
-OCR Module — อ่านข้อความราคาเศษเหล็กจากรูปภาพด้วย Google Cloud Vision API
+OCR Module — อ่านข้อความราคาเศษเหล็กจากรูปภาพด้วย Tesseract (ฟรี ไม่ต้องบัตร)
 """
 
-import os
-import json
-import tempfile
-from pathlib import Path
-
-
-def _setup_credentials():
-    """
-    ตั้งค่า Google credentials จากไฟล์ key หรือ Streamlit secrets
-    """
-    # 1. ใช้ไฟล์ key ในโฟลเดอร์โปรเจคก่อน (เร็วกว่าและทำงานได้ทั้ง webhook และ dashboard)
-    key_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "scrap-ocr-key.json")
-    if not os.path.isabs(key_path):
-        key_path = str(Path(__file__).parent / key_path)
-    if os.path.exists(key_path):
-        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = key_path
-        print(f"[OCR] ใช้ credentials จากไฟล์: {key_path}")
-        return True
-
-    # 2. fallback: Streamlit secrets (สำหรับ Streamlit Cloud เท่านั้น)
-    try:
-        import streamlit as st
-        creds_json = st.secrets.get("GOOGLE_CREDENTIALS_JSON", None)
-        if creds_json:
-            tmp = tempfile.NamedTemporaryFile(
-                mode="w", suffix=".json", delete=False, encoding="utf-8"
-            )
-            tmp.write(creds_json)
-            tmp.close()
-            os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = tmp.name
-            print(f"[OCR] ใช้ credentials จาก Streamlit secrets")
-            return True
-    except Exception:
-        pass
-
-    print("[OCR] ❌ ไม่พบ Google credentials — ตรวจสอบ scrap-ocr-key.json")
-    return False
+import io
 
 
 def extract_text_from_image_bytes(image_bytes: bytes) -> str:
@@ -47,25 +11,17 @@ def extract_text_from_image_bytes(image_bytes: bytes) -> str:
     คืน string ว่างถ้าอ่านไม่ได้หรือเกิด error
     """
     try:
-        from google.cloud import vision
+        from PIL import Image
+        import pytesseract
 
-        _setup_credentials()
+        image = Image.open(io.BytesIO(image_bytes))
+        # ภาษาไทย+อังกฤษ, PSM 6 = อ่านเป็น block ของข้อความ
+        text = pytesseract.image_to_string(image, lang="tha+eng", config="--psm 6")
+        print(f"[OCR] Tesseract อ่านได้: {len(text)} ตัวอักษร")
+        return text.strip()
 
-        client = vision.ImageAnnotatorClient()
-        image = vision.Image(content=image_bytes)
-        response = client.text_detection(image=image)
-
-        if response.error.message:
-            print(f"[OCR] Google Vision error: {response.error.message}")
-            return ""
-
-        texts = response.text_annotations
-        if texts:
-            return texts[0].description  # full text block
-        return ""
-
-    except ImportError:
-        print("[OCR] google-cloud-vision ยังไม่ได้ติดตั้ง — รัน: pip install google-cloud-vision")
+    except ImportError as e:
+        print(f"[OCR] ขาด library: {e}")
         return ""
     except Exception as e:
         print(f"[OCR] Error: {e}")
@@ -73,9 +29,7 @@ def extract_text_from_image_bytes(image_bytes: bytes) -> str:
 
 
 def extract_text_from_image_url(url: str) -> str:
-    """
-    ดาวน์โหลดรูปจาก URL แล้วส่งให้ OCR
-    """
+    """ดาวน์โหลดรูปจาก URL แล้วส่งให้ OCR"""
     import urllib.request
     try:
         with urllib.request.urlopen(url) as resp:
@@ -90,8 +44,7 @@ def extract_text_from_image_url(url: str) -> str:
 if __name__ == "__main__":
     import sys
     if len(sys.argv) > 1:
-        img_path = sys.argv[1]
-        with open(img_path, "rb") as f:
+        with open(sys.argv[1], "rb") as f:
             data = f.read()
         text = extract_text_from_image_bytes(data)
         print("=== OCR Result ===")
