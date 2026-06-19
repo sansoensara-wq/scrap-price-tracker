@@ -79,9 +79,21 @@ def parse_price_message(
         return _parse_quick(text, sender, source_id, source_type)
 
     # ถ้าบรรทัดวันที่ไม่มีชื่อบริษัทนำหน้า (เช่น "ราคาเริ่มวันที่ 10/6/2026")
-    # ให้ใช้บรรทัดก่อนหน้าเป็นชื่อบริษัท (ถ้ามีและไม่มีตัวเลข)
+    # ให้ค้นหาชื่อบริษัทจากทุกบรรทัดก่อนและหลังวันที่ (OCR PSM11 ลำดับบรรทัดไม่แน่นอน)
     if "วันที่" in company:
         company = ""
+    if not company:
+        from grade_mapping import ALL_MILLS
+        search_range = lines[:header_idx + 5]  # ดูก่อนและหลังบรรทัดวันที่เล็กน้อย
+        for ln in search_range:
+            ln_clean = ln.strip().upper()
+            for mill in ALL_MILLS:
+                if mill.upper() in ln_clean:
+                    company = mill
+                    break
+            if company:
+                break
+    # fallback: ใช้บรรทัดก่อนหน้าวันที่ถ้ายังไม่ได้
     if not company and header_idx > 0:
         prev_line = lines[header_idx - 1].strip()
         if prev_line and not re.search(r"\d", prev_line):
