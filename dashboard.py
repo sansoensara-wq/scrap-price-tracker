@@ -57,8 +57,8 @@ def check_login():
 if not check_login():
     st.stop()
 from database import (
-    add_alert, add_demo_data, delete_alert,
-    get_alerts, get_categories, get_grades, get_companies,
+    add_demo_data, delete_alert,
+    get_alerts,
     get_latest_prices, get_price_history,
     init_db, toggle_alert,
 )
@@ -73,23 +73,16 @@ with st.sidebar:
     st.title("🏗️ เศษเหล็ก Tracker")
     st.divider()
 
-    # ── Alert management ──────────────────
-    st.subheader("🔔 ตั้งการแจ้งเตือน")
-    categories = get_grades()  # ใช้เกรดมาตรฐาน (normalize แล้ว) สำหรับตั้ง alert
-    cat_options = ["(ทุกหมวด)"] + categories
+    # ── View mode ──────────────────────────
+    st.subheader("👁️ มุมมอง")
+    view_mode = st.radio(
+        "มุมมอง",
+        ["แยกตามโรงหลอม", "แยกตามเกรด", "รวมทุกเกรดทุกเตาหลอม"],
+        key="trend_view_mode",
+        label_visibility="collapsed",
+    )
 
-    with st.form("alert_form"):
-        a_label = st.text_input("ชื่อ alert", placeholder="เช่น ปั้มราคาสูง")
-        a_cat = st.selectbox("หมวดราคา", cat_options)
-        a_thresh = st.number_input("ราคา threshold (บาท/กก.)", min_value=0.0, value=10.0, step=0.1, format="%.2f")
-        a_dir = st.selectbox("เงื่อนไข", ["above", "below"],
-                             format_func=lambda x: "สูงกว่า ↑" if x == "above" else "ต่ำกว่า ↓")
-        if st.form_submit_button("➕ เพิ่ม Alert"):
-            if a_label:
-                add_alert(a_label, "" if a_cat == "(ทุกหมวด)" else a_cat, a_thresh, a_dir)
-                st.success("เพิ่ม alert แล้ว!")
-                st.rerun()
-
+    st.divider()
     st.subheader("Alerts ที่ตั้งไว้")
     alerts = get_alerts()
     if not alerts:
@@ -182,13 +175,6 @@ if len(date_range) == 2:
 tab1, tab2, tab3, tab4 = st.tabs(["📉 แนวโน้มราคา", "📊 เปรียบเทียบหมวด", "🕯️ OHLC", "🗂️ ข้อมูลดิบ"])
 
 with tab1:
-    view_mode = st.radio(
-        "มุมมอง",
-        ["แยกตามโรงหลอม", "แยกตามเกรด", "รวมทุกเกรดทุกเตาหลอม"],
-        horizontal=True,
-        key="trend_view_mode",
-    )
-
     if dff.empty:
         st.info("ไม่มีข้อมูลตามตัวกรองที่เลือก")
     elif view_mode == "แยกตามโรงหลอม":
