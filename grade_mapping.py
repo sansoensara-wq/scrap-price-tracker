@@ -47,7 +47,19 @@ ALL_STANDARD_GRADES = [
 ALL_MILLS = [
     "LN", "SISCO", "ZUBB", "YX", "CHOW", "KPP", "TSB", "STS", "CSS",
     "NTS", "GJ", "GS", "SCSC", "SYS", "TYS", "MILLCON", "AB STEEL", "YLL",
+    "เชาว์สตีล",
 ]
+
+# โรงหลอมบางโรงมีชื่อเรียกหลายแบบ (เช่น ชื่อเต็มภาษาไทย vs รหัสย่อ)
+# แต่เป็นโรงเดียวกัน ให้แปลงเป็นชื่อหลักก่อนค้นหาใน GRADE_MAP
+MILL_ALIASES: dict[str, str] = {
+    "เชาว์สตีล": "CHOW",
+}
+
+
+def resolve_mill_alias(name: str) -> str:
+    """แปลงชื่อโรงที่เป็น alias ให้เป็นชื่อหลัก (เช่น เชาว์สตีล -> CHOW)"""
+    return MILL_ALIASES.get(name, name)
 
 # (mill, ชื่อที่โรงเรียก) -> เกรดมาตรฐาน
 GRADE_MAP: dict[tuple[str, str], str] = {
@@ -167,6 +179,14 @@ GRADE_MAP: dict[tuple[str, str], str] = {
     # ── 9) ขี้กลึง ─────────────────────────────────────────────
     ("CSS", "ขี้กลึงฟู"): GRADE_TURNING,
     ("CSS", "ขี้กลึงฟ"): GRADE_TURNING,   # OCR บางครั้งอ่านขาด ู
+    ("CHOW", "ขี้กลึง NO.4"): GRADE_TURNING,
+
+    # ── CHOW (เชาว์สตีล) ใช้ชื่อเกรดแบบมีเลข NO.x ต่อท้าย ──────
+    ("CHOW", "ปั๊ม NO.1"): GRADE_PUMP,
+    ("CHOW", "ปั้ม NO.1"): GRADE_PUMP,
+    ("CHOW", "ตัดไฟ A NO.2A"): GRADE_CUT_A,
+    ("CHOW", "ตัดไฟ B NO.2B"): GRADE_CUT_B,
+    ("CHOW", "สปอท NO.3"): GRADE_SPOT_80_100,
 }
 
 

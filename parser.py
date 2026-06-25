@@ -99,6 +99,10 @@ def parse_price_message(
         if prev_line and not re.search(r"\d", prev_line):
             company = prev_line
 
+    # แปลงชื่อโรงแบบ alias (เช่น เชาว์สตีล -> CHOW) ให้เป็นชื่อหลักก่อนใช้ mapping
+    from grade_mapping import resolve_mill_alias
+    company = resolve_mill_alias(company)
+
     # ── วนอ่านบรรทัดที่เหลือหาหมวดราคา ────────────────────────────────
     entries: list[PriceEntry] = []
     skip_words = {"เกรด", "ราคา"}
