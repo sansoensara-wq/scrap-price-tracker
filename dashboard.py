@@ -178,17 +178,20 @@ with tab1:
     if dff.empty:
         st.info("ไม่มีข้อมูลตามตัวกรองที่เลือก")
     elif view_mode == "แยกตามโรงหลอม":
-        n_companies = dff["company"].dropna().nunique() or 1
-        fig = px.line(
-            dff.dropna(subset=["company"]), x="recorded_at", y="price", color="grade",
-            facet_col="company", facet_col_wrap=2,
-            title="แนวโน้มราคา แยกตามโรงหลอม",
-            labels={"recorded_at": "วันที่", "price": "ราคา (฿/กก.)", "grade": "เกรด"},
-            markers=True,
-        )
-        fig.update_yaxes(matches=None)
-        fig.update_layout(height=320 * ((n_companies + 1) // 2), hovermode="x unified")
-        st.plotly_chart(fig, use_container_width=True)
+        mills_avail = sorted(dff["company"].dropna().unique())
+        if not mills_avail:
+            st.info("ไม่มีข้อมูลโรงหลอมตามตัวกรองที่เลือก")
+        else:
+            sel_mill = st.selectbox("เลือกโรงหลอม", mills_avail, key="mill_view_select")
+            dff_mill = dff[dff["company"] == sel_mill]
+            fig = px.line(
+                dff_mill, x="recorded_at", y="price", color="grade",
+                title=f"แนวโน้มราคา — {sel_mill}",
+                labels={"recorded_at": "วันที่", "price": "ราคา (฿/กก.)", "grade": "เกรด"},
+                markers=True,
+            )
+            fig.update_layout(height=480, hovermode="x unified")
+            st.plotly_chart(fig, use_container_width=True)
     elif view_mode == "แยกตามเกรด":
         n_grades = dff["grade"].nunique() or 1
         fig = px.line(
