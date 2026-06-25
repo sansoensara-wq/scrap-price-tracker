@@ -182,22 +182,56 @@ if len(date_range) == 2:
 tab1, tab2, tab3, tab4 = st.tabs(["📉 แนวโน้มราคา", "📊 เปรียบเทียบหมวด", "🕯️ OHLC", "🗂️ ข้อมูลดิบ"])
 
 with tab1:
-    fig = px.line(
-        dff, x="recorded_at", y="price", color="grade",
-        title="แนวโน้มราคาเศษเหล็กตามหมวด",
-        labels={"recorded_at": "วันที่", "price": "ราคา (฿/กก.)", "grade": "เกรด"},
-        markers=True,
+    view_mode = st.radio(
+        "มุมมอง",
+        ["แยกตามโรงหลอม", "แยกตามเกรด", "รวมทุกเกรดทุกเตาหลอม"],
+        horizontal=True,
+        key="trend_view_mode",
     )
-    # วาดเส้น alert threshold
-    for alert in get_alerts():
-        if alert["active"] and (not alert["category"] or alert["category"] in sel_cats):
-            color = "red" if alert["direction"] == "above" else "orange"
-            fig.add_hline(
-                y=alert["threshold"], line_dash="dash", line_color=color,
-                annotation_text=alert["label"], annotation_position="top right",
-            )
-    fig.update_layout(height=480, hovermode="x unified")
-    st.plotly_chart(fig, use_container_width=True)
+
+    if dff.empty:
+        st.info("ไม่มีข้อมูลตามตัวกรองที่เลือก")
+    elif view_mode == "แยกตามโรงหลอม":
+        n_companies = dff["company"].dropna().nunique() or 1
+        fig = px.line(
+            dff.dropna(subset=["company"]), x="recorded_at", y="price", color="grade",
+            facet_col="company", facet_col_wrap=2,
+            title="แนวโน้มราคา แยกตามโรงหลอม",
+            labels={"recorded_at": "วันที่", "price": "ราคา (฿/กก.)", "grade": "เกรด"},
+            markers=True,
+        )
+        fig.update_yaxes(matches=None)
+        fig.update_layout(height=320 * ((n_companies + 1) // 2), hovermode="x unified")
+        st.plotly_chart(fig, use_container_width=True)
+    elif view_mode == "แยกตามเกรด":
+        n_grades = dff["grade"].nunique() or 1
+        fig = px.line(
+            dff, x="recorded_at", y="price", color="company",
+            facet_col="grade", facet_col_wrap=2,
+            title="แนวโน้มราคา แยกตามเกรด",
+            labels={"recorded_at": "วันที่", "price": "ราคา (฿/กก.)", "company": "โรงหลอม"},
+            markers=True,
+        )
+        fig.update_yaxes(matches=None)
+        fig.update_layout(height=320 * ((n_grades + 1) // 2), hovermode="x unified")
+        st.plotly_chart(fig, use_container_width=True)
+    else:  # รวมทุกเกรดทุกเตาหลอม
+        fig = px.line(
+            dff, x="recorded_at", y="price", color="grade",
+            title="แนวโน้มราคา รวมทุกเกรดทุกเตาหลอม",
+            labels={"recorded_at": "วันที่", "price": "ราคา (฿/กก.)", "grade": "เกรด"},
+            markers=True,
+        )
+        # วาดเส้น alert threshold
+        for alert in get_alerts():
+            if alert["active"] and (not alert["category"] or alert["category"] in sel_cats):
+                color = "red" if alert["direction"] == "above" else "orange"
+                fig.add_hline(
+                    y=alert["threshold"], line_dash="dash", line_color=color,
+                    annotation_text=alert["label"], annotation_position="top right",
+                )
+        fig.update_layout(height=480, hovermode="x unified")
+        st.plotly_chart(fig, use_container_width=True)
 
 with tab2:
     # Bar chart ราคาล่าสุดเปรียบเทียบทุกหมวด
