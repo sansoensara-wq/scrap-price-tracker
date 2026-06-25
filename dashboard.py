@@ -178,7 +178,7 @@ with tab1:
     if dff.empty:
         st.info("ไม่มีข้อมูลตามตัวกรองที่เลือก")
     elif view_mode == "แยกตามโรงหลอม":
-        mills_avail = sorted(dff["company"].dropna().unique())
+        mills_avail = sorted(c for c in dff["company"].dropna().unique() if c)
         if not mills_avail:
             st.info("ไม่มีข้อมูลโรงหลอมตามตัวกรองที่เลือก")
         else:

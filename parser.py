@@ -238,6 +238,10 @@ def _parse_quick(
                         source_type=source_type,
                     )
                 )
+
+    # ── เก็บเฉพาะเกรดที่เคยสอน mapping ไว้แล้วเท่านั้น ──────────────
+    entries = [e for e in entries if is_known_grade_name(e.company, e.category)]
+
     return entries
 
 
