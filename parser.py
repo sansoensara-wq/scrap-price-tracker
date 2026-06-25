@@ -94,10 +94,26 @@ def parse_price_message(
             if company:
                 break
     # fallback: ใช้บรรทัดก่อนหน้าวันที่ถ้ายังไม่ได้
+    raw_company_line = ""
     if not company and header_idx > 0:
         prev_line = lines[header_idx - 1].strip()
         if prev_line and not re.search(r"\d", prev_line):
+            raw_company_line = prev_line
             company = prev_line
+
+    # OCR อาจอ่านชื่อโรงภาษาไทยผิดเพี้ยน ลองจับคู่แบบ fuzzy กับชื่อที่อ่านได้
+    from grade_mapping import fuzzy_match_mill
+    if company:
+        matched = fuzzy_match_mill(company)
+        if matched:
+            company = matched
+    if not company or company == raw_company_line:
+        search_range = lines[:header_idx + 5]
+        for ln in search_range:
+            matched = fuzzy_match_mill(ln.strip())
+            if matched:
+                company = matched
+                break
 
     # แปลงชื่อโรงแบบ alias (เช่น เชาว์สตีล -> CHOW) ให้เป็นชื่อหลักก่อนใช้ mapping
     from grade_mapping import resolve_mill_alias

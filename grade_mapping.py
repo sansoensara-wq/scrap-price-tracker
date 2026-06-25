@@ -61,6 +61,30 @@ def resolve_mill_alias(name: str) -> str:
     """แปลงชื่อโรงที่เป็น alias ให้เป็นชื่อหลัก (เช่น เชาว์สตีล -> CHOW)"""
     return MILL_ALIASES.get(name, name)
 
+
+def fuzzy_match_mill(line: str, threshold: float = 0.6) -> str | None:
+    """
+    หาชื่อโรงจากบรรทัด OCR ที่อาจอ่านชื่อโรงภาษาไทยผิดเพี้ยนเล็กน้อย
+    (ใช้เฉพาะชื่อโรงที่เป็นภาษาไทยยาวๆ เพื่อเลี่ยงจับผิดกับรหัสย่อสั้นๆ เช่น LN, YX)
+    """
+    import difflib
+
+    best_mill = None
+    best_ratio = 0.0
+    for mill in ALL_MILLS:
+        if len(mill) < 5:
+            continue
+        n = len(mill)
+        for start in range(0, max(len(line) - n + 3, 1)):
+            window = line[start:start + n + 2]
+            ratio = difflib.SequenceMatcher(None, window, mill).ratio()
+            if ratio > best_ratio:
+                best_ratio = ratio
+                best_mill = mill
+    if best_ratio >= threshold:
+        return best_mill
+    return None
+
 # (mill, ชื่อที่โรงเรียก) -> เกรดมาตรฐาน
 GRADE_MAP: dict[tuple[str, str], str] = {
     # ── 1) ปั๊ม ────────────────────────────────────────────────
