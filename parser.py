@@ -154,23 +154,34 @@ def parse_price_message(
             continue
 
         is_number = re.fullmatch(r"[\d]+(?:\.[\d]{1,2})?", line)
-        if not is_number and i + 1 < len(remaining):
-            next_line = remaining[i + 1]
-            num_match = re.fullmatch(r"([\d]+(?:\.[\d]{1,2})?)", next_line)
-            if num_match:
+        if not is_number:
+            # OCR บางครั้งแยกชื่อเกรดเป็นหลายบรรทัด (เช่น "สปอท" กับ "NO.3" คนละบรรทัด)
+            # ลองรวมบรรทัดถัดไปเรื่อยๆ จนเจอราคา (จำกัดไม่เกิน 3 บรรทัด กันรวมผิด)
+            category_parts = [line]
+            j = i + 1
+            found_price = None
+            while j < len(remaining) and j < i + 4:
+                candidate = remaining[j]
+                num_match = re.fullmatch(r"([\d]+(?:\.[\d]{1,2})?)", candidate)
+                if num_match:
+                    found_price = float(num_match.group(1))
+                    break
+                category_parts.append(candidate)
+                j += 1
+            if found_price is not None:
                 entries.append(
                     PriceEntry(
                         company=company,
                         price_date=price_date,
-                        category=line,
-                        price=float(num_match.group(1)),
+                        category=" ".join(category_parts),
+                        price=found_price,
                         raw_text=text,
                         sender=sender,
                         source_id=source_id,
                         source_type=source_type,
                     )
                 )
-                i += 2
+                i = j + 1
                 continue
 
         i += 1
